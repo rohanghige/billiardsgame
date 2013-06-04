@@ -77,7 +77,7 @@ class Ball(Entity):
 		Color("orange"),
 		Color("green"),
 		Color("brown"),
-		Color("black")
+		Color(30, 30, 30)
 	]
 	def __init__(self, world, number, x, y):
 		self.kill = False
@@ -118,18 +118,20 @@ class Ball(Entity):
 			pos = toScreen(self.body.position)
 			radius = int(shape.radius * PPM)
 			color = self.color
+			display.blit(Ball.shadow_image, (pos[0] - 13, pos[1] - 11))
 			if self.stripe:
 				pygame.draw.circle(display, color, pos, radius, 0)
 				pygame.draw.circle(display, Color("white"), pos, int(shape.radius * 0.75 * PPM), 0)
 			else:
 				pygame.draw.circle(display, color, pos, radius, 0)
+			display.blit(Ball.shading_image, (pos[0] - 9, pos[1] - 9))
 			if DEBUG and self.body.isSleeping:
 				pygame.draw.circle(display, Color(255, 0, 255), pos, radius, 1)
 	def hit(self, impulseVector):
 		self.body.ApplyImpulse(impulseVector, self.body.position)
 	def on_collision(self, other):
 		if isinstance(other, Pocket):
-			print "KILL"
+			if DEBUG: print "KILL"
 			self.kill = True
 
 class Pocket(Entity):
@@ -154,7 +156,7 @@ class MyContactListener(b2.b2ContactListener):
 	def Add(self, point):
 		obj1 = point.shape1.GetBody().userData
 		obj2 = point.shape2.GetBody().userData
-		print "on_collision:", obj1, obj2
+		if DEBUG: print "on_collision:", obj1, obj2
 		if isinstance(obj1, Entity):
 			obj1.on_collision(obj2)
 		if isinstance(obj2, Entity):
@@ -165,6 +167,7 @@ class Game:
 	def __init__(self):
 		pygame.init()
 		self.display = pygame.display.set_mode((SCREENW, SCREENH))
+		pygame.display.set_caption("Billiards Game")
 		self.clock = pygame.time.Clock()
 		self.load()
 	def run(self):
@@ -210,8 +213,18 @@ class Game:
 		Pocket(self.world, 8, 8.5)
 		Pocket(self.world, 16.4, 8.4)
 
-		for n in range(1, 10):
-			Ball(self.world, n, 4 + n*0.6, 2)
+		Ball.shadow_image = pygame.image.load("ball-shadow.png").convert_alpha()
+		Ball.shading_image = pygame.image.load("ball-shading.png").convert_alpha()
+
+		Ball(self.world, 1, 10, 4)
+		Ball(self.world, 2, 10.5, 4.3)
+		Ball(self.world, 3, 10.5, 3.7)
+		Ball(self.world, 4, 11, 4.6)
+		Ball(self.world, 9, 11, 4)
+		Ball(self.world, 5, 11, 3.4)
+		Ball(self.world, 6, 11.5, 4.3)
+		Ball(self.world, 7, 11.5, 3.7)
+		Ball(self.world, 8, 12, 4)
 
 		self.cue = Ball(self.world, 0, 4, 4)
 		self.ready = True
@@ -242,6 +255,7 @@ class Game:
 			mouseOffset = b2.b2Vec2(mouse[0], mouse[1]) - lineStart
 			mouseOffset.Normalize()
 			lineEnd = lineStart + (mouseOffset * SCREENW)
+			lineStart += mouseOffset * 13
 			pygame.draw.line(display, Color("white"), lineStart.tuple(), lineEnd.tuple())
 	def on_mousedown(self, pos):
 		if not self.ready: return
@@ -249,7 +263,7 @@ class Game:
 		#Pocket(self.world, worldMouse.x, worldMouse.y)
 		offset = worldMouse - self.cue.body.position
 		offset.Normalize()
-		self.cue.hit(offset * 5)
+		self.cue.hit(offset * 10)
 		self.ready = False
 
 if __name__ == "__main__":
